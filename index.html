@@ -76,9 +76,9 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 </header>
 <div class="wrap">
   <div class="stats">
-    <div class="stat"><b>5,000</b><span>ريال كل شهر</span></div>
-    <div class="stat"><b>11</b><span>عضو</span></div>
-    <div class="stat"><b>60,000</b><span>مجموع الجمعية</span></div>
+    <div class="stat"><b id="sMonth"></b><span>ريال كل شهر</span></div>
+    <div class="stat"><b id="sCount"></b><span>عضو</span></div>
+    <div class="stat"><b id="sTotal"></b><span>مجموع الجمعية</span></div>
   </div>
 
   <div class="next" id="next"></div>
@@ -98,19 +98,20 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 
 <script>
 const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-const MEMBERS={"مروة":200,"عمار":300,"أماني":300,"عبدالعزيز":350,"سحر":200,"جوخة":500,"أمل":400,"بدرية":250,"تهاني":300,"محمود":700,"حفصة":1500};
-const COLORS={"مروة":"#f8d7e3","عمار":"#d6eaf8","أماني":"#e8daef","عبدالعزيز":"#d5f5e3","سحر":"#fdebd0","جوخة":"#fcf3cf","أمل":"#d1f2eb","بدرية":"#fadbd8","تهاني":"#ebdef0","محمود":"#d4e6f1","حفصة":"#fde2e1"};
+const MEMBERS={"مروة":200,"عمار":300,"أماني":300,"محمد":300,"عبدالعزيز":350,"سحر":200,"جوخة":500,"أمل":400,"بدرية":250,"تهاني":300,"محمود":700,"حفصة":1500};
+const COLORS={"مروة":"#f8d7e3","عمار":"#d6eaf8","أماني":"#e8daef","محمد":"#fff3c4","عبدالعزيز":"#d5f5e3","سحر":"#fdebd0","جوخة":"#fcf3cf","أمل":"#d1f2eb","بدرية":"#fadbd8","تهاني":"#ebdef0","محمود":"#d4e6f1","حفصة":"#fde2e1"};
 const PLAN=[
-["يناير","مروة",2400],["يناير","عمار",2600],
-["فبراير","عمار",1000],["فبراير","أماني",3600],["فبراير","عبدالعزيز",400],
-["مارس","جوخة",3800],["مارس","سحر",1200],
-["أبريل","عبدالعزيز",3800],["أبريل","سحر",1200],
-["مايو","أمل",2800],["مايو","جوخة",2200],
-["يونيو","بدرية",3000],["يونيو","تهاني",2000],
-["يوليو","محمود",3400],["يوليو","تهاني",1600],
-["أغسطس","محمود",5000],
-["سبتمبر","حفصة",5000],["أكتوبر","حفصة",5000],["نوفمبر","حفصة",5000],
-["ديسمبر","حفصة",3000],["ديسمبر","أمل",2000]];
+["يناير","مروة",2400],["يناير","عمار",2900],
+["فبراير","عمار",700],["فبراير","أماني",3600],["فبراير","محمد",1000],
+["مارس","جوخة",4000],["مارس","سحر",1300],
+["أبريل","عبدالعزيز",4200],["أبريل","سحر",1100],
+["مايو","أمل",3300],["مايو","جوخة",2000],
+["يونيو","بدرية",2700],["يونيو","محمد",2600],
+["يوليو","تهاني",3600],["يوليو","محمود",1400],["يوليو","بدرية",300],
+["أغسطس","محمود",5300],
+["سبتمبر","حفصة",3600],["سبتمبر","محمود",1700],
+["أكتوبر","حفصة",5300],["نوفمبر","حفصة",5300],
+["ديسمبر","حفصة",3800],["ديسمبر","أمل",1500]];
 const fmt=n=>n.toLocaleString("en-US");
 
 // annotate each payment: part number, total parts, cumulative
@@ -171,6 +172,10 @@ function renderNext(){
     <div class="ppl">${rs.map(r=>`<div class="p"><i style="background:${COLORS[r.n]}">${r.n[0]}</i>${r.n} <strong>${fmt(r.a)}</strong></div>`).join("")}</div>
     ${nxt?`<div class="after">وبعده (${MONTHS[idx+1]}): ${nxt}</div>`:""}`;
 }
+const MONTHLY=Object.values(MEMBERS).reduce((x,y)=>x+y,0);
+document.getElementById("sMonth").textContent=fmt(MONTHLY);
+document.getElementById("sCount").textContent=Object.keys(MEMBERS).length;
+document.getElementById("sTotal").textContent=fmt(MONTHLY*12);
 renderNext();
 fName.onchange=fMonth.onchange=render;
 document.getElementById("reset").onclick=()=>{fName.value="";fMonth.value="";render()};
