@@ -74,7 +74,7 @@ button:hover{filter:brightness(.95)}
 .shares summary::-webkit-details-marker{display:none}
 .shares .chev{margin-inline-start:auto;color:var(--gold);transition:transform .25s}
 .shares[open] .chev{transform:rotate(180deg)}
-.results{scroll-margin-top:150px}
+.results{scroll-margin-top:200px}
 @keyframes flash{0%{box-shadow:0 0 0 0 rgba(201,162,39,.0);background:#fff}25%{box-shadow:0 0 0 4px rgba(201,162,39,.7);background:#fff7dc}60%{box-shadow:0 0 0 2px rgba(201,162,39,.4);background:#fff}100%{box-shadow:0 2px 10px rgba(31,58,95,.08)}}
 @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,0)}30%{box-shadow:0 0 0 5px rgba(201,162,39,.8)}}
 .flash .month{animation:flash 1.1s ease 2}
@@ -90,6 +90,17 @@ button:hover{filter:brightness(.95)}
 .mlist b{color:var(--navy);font-variant-numeric:tabular-nums}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+.swapnote{display:block;margin-top:3px;font-size:12.5px;color:#7a4b00;background:#fff4d6;border-radius:8px;padding:3px 8px;width:fit-content}
+.swaprow{background:repeating-linear-gradient(-45deg,#fffaf0,#fffaf0 8px,#fff4e0 8px,#fff4e0 16px)}
+.swaprow .amt{color:#b07400;font-size:15px}
+.swaps{background:var(--card);border-radius:14px;padding:14px;margin-top:14px;box-shadow:0 2px 10px rgba(31,58,95,.08)}
+.sw{display:grid;grid-template-columns:1fr auto;gap:4px 10px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.sw .who{font-weight:700}
+.sw .meta{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;height:fit-content}
+.st.wait{background:#fff1cc;color:#8a5a00}.st.ok{background:var(--okbg);color:var(--ok)}
+.ex{font-size:11px;background:#eef1f6;color:var(--muted);padding:1px 7px;border-radius:20px;margin-inline-start:6px;font-weight:500}
+.mswap{margin-top:10px;background:#fff4d6;color:#7a4b00;border-radius:10px;padding:9px 12px;font-size:14px}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 @media (max-width:520px){
  header h1{font-size:26px}
@@ -124,6 +135,10 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
   <div class="person" id="person"></div>
   <div class="months" id="months"></div>
   <div class="empty" id="empty">ما فيه استلام لهذا الاختيار</div>
+  <div class="swaps">
+    <div class="ftitle"><span style="color:var(--gold)">🔁</span>سجل التبديلات بين الأعضاء</div>
+    <div id="swaplist"></div>
+  </div>
   <div class="shares" id="shares">
     <div class="ftitle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/></svg>الأعضاء وسهم كل واحد<span class="hint">اضغط على أي عضو</span></div>
     <div class="sgrid" id="sgrid"></div>
@@ -149,6 +164,10 @@ const PLAN=[
 ["سبتمبر","حفصة",3850],["سبتمبر","حسن",1800],
 ["أكتوبر","حفصة",5650],["نوفمبر","حفصة",5650],
 ["ديسمبر","حفصة",2850],["ديسمبر","أمل",1150],["ديسمبر","محمود",1650]];
+// سجل التبديلات: from = اللي يعطي من استلامه، to = اللي ياخذ، take = شهر الأخذ، back = شهر الإرجاع
+const SWAPS=[
+ // مثال: {from:"محمود",to:"حسن",amount:1000,take:"أغسطس",back:"سبتمبر",done:false},
+];
 const fmt=n=>n.toLocaleString("en-US");
 
 // annotate each payment: part number, total parts, cumulative
@@ -177,13 +196,40 @@ function openModal(n){
    <div class="pgrid"><div><b>${fmt(MEMBERS[n])}</b><span>السهم الشهري</span></div>
    <div><b>${fmt(due)}</b><span>حقه كامل</span></div><div><b>${mine.length}</b><span>${mine.length===1?"استلام واحد":"دفعات"}</span></div></div>
    <div class="bar">${mine.map(r=>`<i style="width:${r.a/due*100}%"></i>`).join("")}</div>
-   <div class="mlist">${mine.map(r=>`<div><span>${r.m} 2027 · <small style="color:var(--muted)">${r.note}</small></span><b>${fmt(r.a)}</b></div>`).join("")}</div>`;
+   ${swapLines(n)}<div class="mlist">${mine.map(r=>`<div><span>${r.m} 2027 · <small style="color:var(--muted)">${r.note}</small></span><b>${fmt(r.a)}</b></div>`).join("")}</div>`;
   const m=document.getElementById("modal"); m.classList.add("open"); m.setAttribute("aria-hidden","false");
 }
 function closeModal(){const m=document.getElementById("modal");m.classList.remove("open");m.setAttribute("aria-hidden","true")}
 document.getElementById("mclose").onclick=closeModal;
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+function swapNotes(r){
+  return SWAPS.map(w=>{
+    if(w.take===r.m&&w.from===r.n) return `<span class="swapnote">🔁 يعطي ${w.to} ${fmt(w.amount)} سلفة من استلامه</span>`;
+    if(w.back===r.m&&w.to===r.n) return `<span class="swapnote">🔁 يرجع ${fmt(w.amount)} لـ ${w.from} من استلامه</span>`;
+    return "";}).join("");
+}
+function swapRows(mon,n){
+  const out=[];
+  SWAPS.forEach(w=>{
+    if(w.take===mon&&(!n||n===w.to)) out.push([w.to,`يستلم ${fmt(w.amount)} من ${w.from} (سلفة)`,w.amount]);
+    if(w.back===mon&&(!n||n===w.from)) out.push([w.from,`يرجع له ${w.to} ${fmt(w.amount)} (سداد السلفة)`,w.amount]);
+  });
+  return out.map(([who,txt,a])=>`<div class="row swaprow"><div class="dot" style="background:${COLORS[who]}">${who[0]}</div>
+    <div class="who"><b>${who} 🔁</b><small>${txt}</small></div><div class="amt">(${fmt(a)})</div></div>`).join("");
+}
+function renderSwaps(){
+  const box=document.getElementById("swaplist");
+  box.innerHTML=SWAPS.length?SWAPS.map(w=>`<div class="sw"><div class="who">${w.to} تسلف من ${w.from} <b style="color:var(--navy)">${fmt(w.amount)}</b>${w.example?'<span class="ex">مثال</span>':''}</div>
+    <span class="st ${w.done?"ok":"wait"}">${w.done?"✅ تم الإرجاع":"⏳ باقي"}</span>
+    <div class="meta">أخذها في ${w.take} من استلام ${w.from} · يرجعها في ${w.back} من استلامه</div></div>`).join("")
+    :'<div class="meta" style="color:var(--muted);font-size:14px">ما فيه تبديلات حالياً</div>';
+}
+function swapLines(n){
+  return SWAPS.filter(w=>w.from===n||w.to===n).map(w=>w.to===n
+    ?`<div class="mswap">🔁 عليه لـ ${w.from} ${fmt(w.amount)} — يرجعها في ${w.back} ${w.done?"✅":"⏳"}</div>`
+    :`<div class="mswap">🔁 له عند ${w.to} ${fmt(w.amount)} — يستلمها في ${w.back} ${w.done?"✅":"⏳"}</div>`).join("");
+}
 function render(){
   const n=fName.value,m=fMonth.value;
   renderShares();
@@ -198,8 +244,8 @@ function render(){
     const card=document.createElement("div");card.className="month";
     card.innerHTML=`<div class="mhead"><div><h3>${mon}</h3><span class="num">الشهر ${i+1}</span></div><div class="tot">${fmt(total)} ريال</div></div>`+
       rs.map(r=>`<div class="row"><div class="dot" style="background:${COLORS[r.n]}">${r.n[0]}</div>
-        <div class="who"><b>${r.n}${r.last?'<span class="done">✓ اكتمل حقه</span>':''}</b><small>${r.note}</small></div>
-        <div class="amt">${fmt(r.a)}</div></div>`).join("");
+        <div class="who"><b>${r.n}${r.last?'<span class="done">✓ اكتمل حقه</span>':''}</b><small>${r.note}</small>${swapNotes(r)}</div>
+        <div class="amt">${fmt(r.a)}</div></div>`).join("")+swapRows(mon,n);
     box.appendChild(card);
   });
   document.getElementById("empty").style.display=any?"none":"block";
@@ -234,6 +280,7 @@ document.getElementById("sMonth").textContent=fmt(MONTHLY);
 document.getElementById("sCount").textContent=Object.keys(MEMBERS).length;
 document.getElementById("sTotal").textContent=fmt(MONTHLY*12);
 renderNext();
+renderSwaps();
 function flash(){
   const els=[document.getElementById("person"),document.getElementById("months")];
   els.forEach(e=>{e.classList.remove("flash");void e.offsetWidth;e.classList.add("flash")});
