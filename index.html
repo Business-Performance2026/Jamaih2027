@@ -68,7 +68,8 @@ button:hover{filter:brightness(.95)}
 .sh b{display:block;font-size:15px}
 .sh small{color:var(--muted);font-size:12px}
 .sh strong{color:var(--navy)}
-.shares{margin:0 0 12px}
+.shares{margin:14px 0 0}
+.shares .hint{margin-inline-start:auto;font-size:12px;font-weight:500;color:var(--muted)}
 .shares summary{cursor:pointer;list-style:none;user-select:none}
 .shares summary::-webkit-details-marker{display:none}
 .shares .chev{margin-inline-start:auto;color:var(--gold);transition:transform .25s}
@@ -78,6 +79,17 @@ button:hover{filter:brightness(.95)}
 @keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,0)}30%{box-shadow:0 0 0 5px rgba(201,162,39,.8)}}
 .flash .month{animation:flash 1.1s ease 2}
 .flash.person{animation:ring 1.1s ease 2}
+.modal{position:fixed;inset:0;background:rgba(15,25,40,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal.open{display:flex;animation:fade .2s}
+.mbox{background:var(--navy);color:#fff;border-radius:18px;padding:20px 18px 18px;width:100%;max-width:420px;max-height:88vh;overflow:auto;position:relative;animation:pop .25s ease}
+.x{position:absolute;top:10px;left:10px;width:34px;height:34px;border-radius:50%;padding:0;background:rgba(255,255,255,.15);font-size:16px;line-height:34px}
+.mbox h2{margin:0 0 12px;font-size:22px;display:flex;align-items:center;gap:10px}
+.mbox h2 i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-style:normal;color:var(--navy);font-size:17px}
+.mlist{margin-top:14px;display:grid;gap:8px}
+.mlist div{display:flex;justify-content:space-between;background:#fff;color:var(--ink);border-radius:10px;padding:10px 12px}
+.mlist b{color:var(--navy);font-variant-numeric:tabular-nums}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 @media (max-width:520px){
  header h1{font-size:26px}
@@ -101,10 +113,6 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 
   <div class="next" id="next"></div>
 
-  <details class="shares" id="shares">
-    <summary class="ftitle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/></svg>الأعضاء وسهم كل واحد<span class="chev">▾</span></summary>
-    <div class="sgrid" id="sgrid"></div>
-  </details>
 
   <div class="filters">
     <div class="ftitle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4z"/></svg>فلتر بالشهر أو الاسم</div>
@@ -116,9 +124,15 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
   <div class="person" id="person"></div>
   <div class="months" id="months"></div>
   <div class="empty" id="empty">ما فيه استلام لهذا الاختيار</div>
+  <div class="shares" id="shares">
+    <div class="ftitle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/></svg>الأعضاء وسهم كل واحد<span class="hint">اضغط على أي عضو</span></div>
+    <div class="sgrid" id="sgrid"></div>
+  </div>
   <footer>كل عضو يستلم مجموع ما يدفعه خلال السنة (الدفع الشهري × 12)</footer>
 </div>
 
+<div class="modal" id="modal" aria-hidden="true"><div class="mbox" role="dialog" aria-modal="true">
+  <button class="x" id="mclose" type="button" aria-label="إغلاق">✕</button><div id="mbody"></div></div></div>
 <script>
 const MONTHS=["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
 const MEMBERS={"حسن":350,"عمار":300,"أماني":300,"محمد":300,"جوخة":500,"سحر":200,"مروة":200,"عبدالعزيز":350,"أمل":400,"بدرية":250,"تهاني":300,"محمود":700,"حفصة":1500};
@@ -153,10 +167,23 @@ MONTHS.forEach(m=>fMonth.add(new Option(m,m)));
 
 function renderShares(){
   const g=document.getElementById("sgrid"),n=fName.value;
-  g.innerHTML=Object.entries(MEMBERS).map(([k,v])=>`<button type="button" class="sh${k===n?" on":""}" data-n="${k}"><i style="background:${COLORS[k]}">${k[0]}</i>
+  g.innerHTML=Object.entries(MEMBERS).map(([k,v])=>`<button type="button" class="sh" data-n="${k}"><i style="background:${COLORS[k]}">${k[0]}</i>
     <span><b>${k}</b><small>السهم <strong>${fmt(v)}</strong> ريال<br>حقه ${fmt(v*12)}</small></span></button>`).join("");
-  g.querySelectorAll(".sh").forEach(el=>el.onclick=()=>{fName.value=fName.value===el.dataset.n?"":el.dataset.n;render();flash()});
+  g.querySelectorAll(".sh").forEach(el=>el.onclick=()=>openModal(el.dataset.n));
 }
+function openModal(n){
+  const due=MEMBERS[n]*12,mine=ROWS.filter(r=>r.n===n);
+  document.getElementById("mbody").innerHTML=`<h2><i style="background:${COLORS[n]}">${n[0]}</i>${n}</h2>
+   <div class="pgrid"><div><b>${fmt(MEMBERS[n])}</b><span>السهم الشهري</span></div>
+   <div><b>${fmt(due)}</b><span>حقه كامل</span></div><div><b>${mine.length}</b><span>${mine.length===1?"استلام واحد":"دفعات"}</span></div></div>
+   <div class="bar">${mine.map(r=>`<i style="width:${r.a/due*100}%"></i>`).join("")}</div>
+   <div class="mlist">${mine.map(r=>`<div><span>${r.m} 2027 · <small style="color:var(--muted)">${r.note}</small></span><b>${fmt(r.a)}</b></div>`).join("")}</div>`;
+  const m=document.getElementById("modal"); m.classList.add("open"); m.setAttribute("aria-hidden","false");
+}
+function closeModal(){const m=document.getElementById("modal");m.classList.remove("open");m.setAttribute("aria-hidden","true")}
+document.getElementById("mclose").onclick=closeModal;
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function render(){
   const n=fName.value,m=fMonth.value;
   renderShares();
